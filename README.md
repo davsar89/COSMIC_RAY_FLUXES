@@ -1,4 +1,4 @@
-### The provided code, based on PARMA (Fortran 90), is to calculate the fluxes (/cm²/s) of cosmic (secondary) particles as a function of altitude. An illustrative example is included for electrons with min energy thresholds set at 0.3 and 1 MeV.'.
+### Calculates the fluxes (/cm²/s) of cosmic (secondary) particles as a function of altitude, based on PARMA (Fortran 90). An illustrative example is included for electrons with min energy thresholds set at 0.3 and 1 MeV, and altitudes between 10 and 20 km.
 
 * Requirements: fortran compiler (gfortran)
 * Open a terminal and run `make` command to compile fortran code and produce executable `electron_fluxes`
