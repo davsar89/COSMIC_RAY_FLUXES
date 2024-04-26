@@ -6,7 +6,7 @@
 * the fortran code just processes one ID(type), one energy threshold and one altitude at a time.
 * the python script `run_on_grid.py` runs the compiled executable 
 `electron_fluxes` for a range of input parameters, outputs the results in `.csv` file, and plots results in a `.png` file.
-* Example results are showed in `results.csv` and `flux_vs_altitude_electron.png`
+* example results are showed in `results.csv` and `flux_vs_altitude_electron.png`
 
 ![image](flux_vs_altitude_electron.png)
 
