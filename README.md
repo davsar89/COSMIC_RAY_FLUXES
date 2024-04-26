@@ -9,12 +9,8 @@
 
 ![image](flux_vs_altitude_electron.png)
 
-* Below is original README file from the PARMA code
-
+* Below is slightly edited original README file from the PARMA code
 *
-*
-*
-
 
 ```
 PARMA4 can calculate the atmospheric cosmic-ray fluxes & dose rates.
