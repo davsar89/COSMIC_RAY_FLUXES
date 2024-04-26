@@ -83,7 +83,7 @@ if __name__ == "__main__":
     plt.ylabel('Energy Integrated Flux (cm^-2 s^-1)')
     plt.title('Energy Integrated Electron Flux vs Altitude')
     plt.grid(True)
-    plt.plot(altitude_list[nn+1:-1], energy_integrated_flux_list[nn+1:-1], label='Min energy thres = 1.0 MeV')
+    plt.plot(altitude_list[nn+1:], energy_integrated_flux_list[nn+1:], label='Min energy thres = 1.0 MeV')
     plt.legend()
     plt.savefig('flux_vs_altitude_electron.png')
     plt.show()
