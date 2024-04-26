@@ -4,7 +4,7 @@
 * Open a terminal and run `make` command to compile fortran code and produce executable `electron_fluxes`
 * the fortran code just processes one energy threshold and altitude
 * the python script `run_on_grid.py` runs the compiled executable 
-`electron_fluxes` for several input parameters.
+`electron_fluxes` for several input parameters, and output the results as `.csv` and plots as `.png` files.
 * Example results are showed in `results.csv` and `flux_vs_altitude_electron.png`
 
 ![image](flux_vs_altitude_electron.png)
