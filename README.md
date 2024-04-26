@@ -3,7 +3,11 @@
 * Requirements: fortran compiler (gfortran)
 * Open a terminal and run `make` command to compile fortran code and produce executable `electron_fluxes`
 * the fortran code just processes one energy threshold and altitude
-* the python script `run_on_grid.py` runs the compiled executable `electron_fluxes` for several input parameters.
+* the python script `run_on_grid.py` runs the compiled executable 
+`electron_fluxes` for several input parameters.
+
+![image](flux_vs_altitude_electron.png)
+
 * Below is original README file from the PARMA code
 
 *
