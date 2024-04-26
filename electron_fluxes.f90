@@ -11,6 +11,7 @@ program electron_fluxes
    real(kind=8), dimension(npoints_ener) :: energy_grid
    real(kind=8), dimension(npoints_ener) :: flux_cm2_s_MeV
    real(kind=8), dimension(npoints_alt) :: altitude_grid
+   character(len=10) :: name
 
    data IangPart/1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,5,5,6/ ! Angular particle ID
 
@@ -35,29 +36,32 @@ program electron_fluxes
 ! Check command-line arguments
    call get_command_argument(1, arg, iostat)
    if (len_trim(arg) > 0) then
-       read(arg, *) ip
+      read(arg, *) ip
    else
-       print *, 'Please enter an particle ID number (Particle ID, 0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)'
-       read *, emin
+      print *, 'Please enter a particle ID number (Particle ID, 0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)'
+      read *, ip
    endif
 
    call get_command_argument(2, arg, iostat)
    if (len_trim(arg) > 0) then
-       read(arg, *) emin
+      read(arg, *) emin
    else
-       print *, 'Please enter an energy threshold in MeV:'
-       read *, emin
+      print *, 'Please enter an energy threshold in MeV:'
+      read *, emin
    endif
 
    call get_command_argument(3, arg, iostat)
    if (len_trim(arg) > 0) then
-       read(arg, *) alti
+      read(arg, *) alti
    else
-       print *, 'Please enter an altitude in kilometers:'
-       read *, alti
+      print *, 'Please enter an altitude in kilometers:'
+      read *, alti
    endif
 
+   call intToStringMapping(ip, name)
+
    ! Output the entered values to confirm
+   print *, 'Particle ID: ', ip ,'(',trim(name),')'
    print '(A, F10.2, A)', ' Energy Threshold: ', emin, ' MeV'
    print '(A, F17.1, A)', ' Altitude: ', alti, '  kilometers'
 

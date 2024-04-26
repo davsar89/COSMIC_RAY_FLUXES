@@ -1556,3 +1556,30 @@ function trapezoidal_integration(energy_grid, flux_values, num_points) result(to
       total_flux = total_flux + 0.5d0 * (flux_values(i) + flux_values(i + 1)) * (energy_grid(i + 1) - energy_grid(i))
    end do
 end function trapezoidal_integration
+
+subroutine intToStringMapping(n, label)
+   implicit none
+   integer, intent(in) :: n      ! Input integer
+   character(len=10), intent(out) :: label   ! Output label
+
+   ! Associate integers with strings
+   select case (n)
+    case (0)
+      label = 'neutron'
+    case (1:28)
+      label = 'H-Ni ions'
+    case (29)
+      label = 'muon+'
+    case (30)
+        label = 'muon-'
+    case (31)
+      label = 'electron'
+    case (32)
+      label = 'positron'
+    case (33)
+      label = 'photon'
+    case default
+      label = 'undefined'
+   end select
+end subroutine intToStringMapping
+

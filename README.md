@@ -2,6 +2,7 @@
 
 * Requirements: fortran compiler (gfortran)
 * Open a terminal and run `make` command to compile fortran code and produce executable `electron_fluxes`
+* the executable `electron_fluxes` takes 3 input arguments : `particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)` and `altitude (km)`.
 * the fortran code just processes one energy threshold and altitude
 * the python script `run_on_grid.py` runs the compiled executable 
 `electron_fluxes` for several input parameters, and output the results as `.csv` and plots as `.png` files.
