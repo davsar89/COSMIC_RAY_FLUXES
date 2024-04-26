@@ -110,8 +110,4 @@ A8. For non-commercial use, you should refer the following manuscripts in any pu
 Acknowledgement
   This program uses a random generator based on Mersenne Twister method,
   which is developed by Prof. M. Matsumoto of Hiroshima University.
-
-Contact
-  If you have any questions or requests on this program, 
-  please E-mail to nsed-expacs@jaea.go.jp
   ```
