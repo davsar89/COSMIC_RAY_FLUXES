@@ -26,7 +26,7 @@ You can download EXPACS from the webiste below
 http://phits.jaea.go.jp/expacs
 
 Table of contents
-  Readme.txt:      This file
+  README.md.txt:      This file
   electron_fluxes.f90: Added to calculate electron fluxes (number per cm2) at a given altitude and for a given minimum energy threshold
   main.f90:        Main program of PARMA for calculating cosmic-ray fluxes & doses
   main-simple.f90: Main program for calculating flux at a certain condition (easy to start up)
