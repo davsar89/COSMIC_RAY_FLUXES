@@ -39,6 +39,7 @@ Table of contents
   /Doseout:        Sample output files for dose calculation
   /input:          Databases used in PARMA
   /SpecOut:        Sample output files for flux calculation
+  NOT EXHAUSTIVE
 
 Q1. How to use?
 A1. You have to compile the programs using a Fortran compiler.
