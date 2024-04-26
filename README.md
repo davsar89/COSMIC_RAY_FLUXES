@@ -10,6 +10,7 @@
 
 ![image](flux_vs_altitude_electron.png)
 
+*
 * Below is slightly edited original README file from the PARMA code
 *
 
