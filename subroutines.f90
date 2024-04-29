@@ -1604,9 +1604,9 @@ contains
       end do
    end function simpson_integration
 
-   function flux_interpolation(x, energy_grid, flux_values, num_points) result(fx)
+   function flux_interpolation(x, x_grid, y_vals, num_points) result(fx)
       real(8), intent(in) :: x
-      real(8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      real(8), dimension(num_points), intent(in) :: x_grid, y_vals
       integer, intent(in) :: num_points
       real(8) :: fx
       integer :: j
@@ -1614,18 +1614,18 @@ contains
       fx = 0.0d0  ! Initialize return value to avoid undefined behavior
       ! Simple linear interpolation between nearest points
       do j = 1, num_points - 1
-         if (x >= energy_grid(j) .and. x <= energy_grid(j+1)) then
-            fx = flux_values(j) + (flux_values(j+1) - flux_values(j)) / &
-               (energy_grid(j+1) - energy_grid(j)) * (x - energy_grid(j))
+         if (x >= x_grid(j) .and. x <= x_grid(j+1)) then
+            fx = y_vals(j) + (y_vals(j+1) - y_vals(j)) / &
+               (x_grid(j+1) - x_grid(j)) * (x - x_grid(j))
             return
          endif
       end do
 
       ! If x is outside the grid range, extrapolate linearly from the closest interval
-      if (x < energy_grid(1)) then
-         fx = flux_values(1)
-      elseif (x > energy_grid(num_points)) then
-         fx = flux_values(num_points)
+      if (x < x_grid(1)) then
+         fx = y_vals(1)
+      elseif (x > x_grid(num_points)) then
+         fx = y_vals(num_points)
       endif
    end function flux_interpolation
 
