@@ -91,7 +91,8 @@ program electron_fluxes
    !call output_array(flux_cm2_s_MeV, npoints_ener)
 
    !Calculate the total flux using the trapezoidal rule
-   total_flux = trapezoidal_integration(energy_grid, flux_cm2_s_MeV, npoints_ener)
+   !total_flux = trapezoidal_integration(energy_grid, flux_cm2_s_MeV, npoints_ener)
+   total_flux = simpson_rule(energy_grid, flux_cm2_s_MeV, npoints_ener)
 
    ! Output the result
    print *, 'Energy integrated flux : ', total_flux, ' cm^-2 s^-1'

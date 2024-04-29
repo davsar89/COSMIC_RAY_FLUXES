@@ -1557,6 +1557,20 @@ function trapezoidal_integration(energy_grid, flux_values, num_points) result(to
    end do
 end function trapezoidal_integration
 
+function simpson_rule(energy_grid, flux_values, num_points) result(total_flux)
+   real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+   integer, intent(in) :: num_points
+   real(kind=8) :: total_flux, h1, h2
+   integer :: i
+
+   total_flux = 0.0d0
+   do i = 2, num_points - 1, 2
+      h1 = energy_grid(i) - energy_grid(i-1)
+      h2 = energy_grid(i+1) - energy_grid(i)
+      total_flux = total_flux + (h1 + h2) / 6.0 * (flux_values(i-1) + 4*flux_values(i) + flux_values(i+1))
+   end do
+end function simpson_rule
+
 subroutine intToStringMapping(n, label)
    implicit none
    integer, intent(in) :: n      ! Input integer
@@ -1571,7 +1585,7 @@ subroutine intToStringMapping(n, label)
     case (29)
       label = 'muon+'
     case (30)
-        label = 'muon-'
+      label = 'muon-'
     case (31)
       label = 'electron'
     case (32)
