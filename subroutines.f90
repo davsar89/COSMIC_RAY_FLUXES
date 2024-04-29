@@ -1528,7 +1528,7 @@ contains
       step = (max_val - min_val) / (real(npoints) - 1.0d0)
 
       do i = 1, npoints
-         grid_out(i) = min_val + (i - 1) * step
+         grid_out(i) = min_val + (real(i) - 1.0d0) * step
       end do
    end subroutine create_lin_grid
 
@@ -1548,7 +1548,7 @@ contains
       step = (log_emax - log_emin) / (real(npoints) - 1.0d0)
 
       do i = 1, npoints
-         grid_out(i) = 10.0**(log_emin + (i - 1) * step)
+         grid_out(i) = 10.0**(log_emin + (real(i) - 1.0d0) * step)
       end do
    end subroutine create_log_grid
 
