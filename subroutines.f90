@@ -1497,78 +1497,88 @@ end
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+! module contains several utility functions
+
+module utility
+
+contains
+
 ! Subroutine to output the energy grid
-subroutine output_array(grid, npoints)
-   integer, intent(in) :: npoints
-   real(kind=8), intent(in), dimension(npoints) :: grid
-   integer :: i
+   subroutine output_array(grid, npoints)
+      implicit none
+      integer, intent(in) :: npoints
+      real(kind=8), intent(in), dimension(npoints) :: grid
+      integer :: i
 
-   !print *, 'Energy grid:'
-   do i = 1, npoints
-      print *, 'arr(', i, ') = ', grid(i)
-   end do
-end subroutine output_array
+      !print *, 'Energy grid:'
+      do i = 1, npoints
+         print *, 'arr(', i, ') = ', grid(i)
+      end do
+   end subroutine output_array
 
- ! Subroutine to create a linearly spaced grid
-subroutine create_lin_grid(min_val, max_val, grid_out, npoints)
-   integer, intent(in) :: npoints
-   real(kind=8), intent(in) :: min_val, max_val
-   real(kind=8), intent(out), dimension(npoints) :: grid_out
-   integer :: i
-   real(kind=8) :: step
+   ! Subroutine to create a linearly spaced grid
+   subroutine create_lin_grid(min_val, max_val, grid_out, npoints)
+      implicit none
+      integer, intent(in) :: npoints
+      real(kind=8), intent(in) :: min_val, max_val
+      real(kind=8), intent(out), dimension(npoints) :: grid_out
+      integer :: i
+      real(kind=8) :: step
 
-   step = (max_val - min_val) / (npoints - 1)
+      step = (max_val - min_val) / (real(npoints) - 1.0d0)
 
-   do i = 1, npoints
-      grid_out(i) = min_val + (i - 1) * step
-   end do
-end subroutine create_lin_grid
+      do i = 1, npoints
+         grid_out(i) = min_val + (i - 1) * step
+      end do
+   end subroutine create_lin_grid
 
-subroutine create_log_grid(min_val, max_val, grid_out, npoints)
-   implicit none
-   integer, intent(in) :: npoints
-   real(kind=8), intent(in) :: min_val, max_val
-   real(kind=8), intent(out), dimension(npoints) :: grid_out
-   integer :: i
-   real(kind=8) :: log_emin, log_emax, step
+   subroutine create_log_grid(min_val, max_val, grid_out, npoints)
+      implicit none
+      integer, intent(in) :: npoints
+      real(kind=8), intent(in) :: min_val, max_val
+      real(kind=8), intent(out), dimension(npoints) :: grid_out
+      integer :: i
+      real(kind=8) :: log_emin, log_emax, step
 
-   ! Compute the logarithms of the min and max energies
-   log_emin = log10(min_val)
-   log_emax = log10(max_val)
+      ! Compute the logarithms of the min and max energies
+      log_emin = log10(min_val)
+      log_emax = log10(max_val)
 
-   ! Calculate the step size in logarithmic space
-   step = (log_emax - log_emin) / (npoints - 1)
+      ! Calculate the step size in logarithmic space
+      step = (log_emax - log_emin) / (real(npoints) - 1.0d0)
 
-   do i = 1, npoints
-      grid_out(i) = 10.0**(log_emin + (i - 1) * step)
-   end do
-end subroutine create_log_grid
+      do i = 1, npoints
+         grid_out(i) = 10.0**(log_emin + (i - 1) * step)
+      end do
+   end subroutine create_log_grid
 
-subroutine ID_to_string_mapping(n, label)
-   implicit none
-   integer, intent(in) :: n      ! Input integer ID
-   character(len=10), intent(out) :: label   ! Output string label
+   subroutine ID_to_string_mapping(n, label)
+      implicit none
+      integer, intent(in) :: n      ! Input integer ID
+      character(len=10), intent(out) :: label   ! Output string label
 
-   ! Associate integers with strings
-   select case (n)
-    case (0)
-      label = 'neutron'
-    case (1:28)
-      label = 'H-Ni ions'
-    case (29)
-      label = 'muon+'
-    case (30)
-      label = 'muon-'
-    case (31)
-      label = 'electron'
-    case (32)
-      label = 'positron'
-    case (33)
-      label = 'photon'
-    case default
-      label = 'undefined'
-   end select
-end subroutine ID_to_string_mapping
+      ! Associate integers with strings
+      select case (n)
+       case (0)
+         label = 'neutron'
+       case (1:28)
+         label = 'H-Ni ions'
+       case (29)
+         label = 'muon+'
+       case (30)
+         label = 'muon-'
+       case (31)
+         label = 'electron'
+       case (32)
+         label = 'positron'
+       case (33)
+         label = 'photon'
+       case default
+         label = 'undefined'
+      end select
+   end subroutine ID_to_string_mapping
+
+end module utility
 
 ! module contains several integration functions
 

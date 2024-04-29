@@ -1,5 +1,6 @@
 program electron_fluxes
    use integration
+   use utility
 !  Calculate cosmic-ray fluxes in the atmosphere based on PARMA model
    parameter(npart=33) ! number of applicable particle
    implicit real*8 (a-h, o-z)
@@ -73,7 +74,7 @@ program electron_fluxes
 ! Call the subroutine to fill the grid
    call create_log_grid(emin, emax, energy_grid, npoints_ener)
 
-   call create_lin_grid(10, 20, altitude_grid, npoints_alt)
+   call create_lin_grid(10.0d0, 20.0d0, altitude_grid, npoints_alt)
 
 ! Output the results
    !call output_array(energy_grid, npoints_ener)
