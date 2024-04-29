@@ -1,4 +1,5 @@
 program electron_fluxes
+   use integration
 !  Calculate cosmic-ray fluxes in the atmosphere based on PARMA model
    parameter(npart=33) ! number of applicable particle
    implicit real*8 (a-h, o-z)
@@ -92,7 +93,8 @@ program electron_fluxes
 
    !Calculate the total flux using the trapezoidal rule
    !total_flux = trapezoidal_integration(energy_grid, flux_cm2_s_MeV, npoints_ener)
-   total_flux = simpson_rule(energy_grid, flux_cm2_s_MeV, npoints_ener)
+   total_flux = simpson_integration(energy_grid, flux_cm2_s_MeV, npoints_ener)
+   !total_flux = rk4_integration(energy_grid, flux_cm2_s_MeV, npoints_ener)
 
    ! Output the result
    print *, 'Energy integrated flux : ', total_flux, ' cm^-2 s^-1'

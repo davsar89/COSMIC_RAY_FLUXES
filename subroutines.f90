@@ -1544,33 +1544,6 @@ subroutine create_log_grid(min_val, max_val, grid_out, npoints)
    end do
 end subroutine create_log_grid
 
-function trapezoidal_integration(energy_grid, flux_values, num_points) result(total_flux)
-   implicit none
-   real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
-   integer, intent(in) :: num_points
-   real(kind=8) :: total_flux
-   integer :: i
-
-   total_flux = 0.0d0
-   do i = 1, num_points - 1
-      total_flux = total_flux + 0.5d0 * (flux_values(i) + flux_values(i + 1)) * (energy_grid(i + 1) - energy_grid(i))
-   end do
-end function trapezoidal_integration
-
-function simpson_rule(energy_grid, flux_values, num_points) result(total_flux)
-   real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
-   integer, intent(in) :: num_points
-   real(kind=8) :: total_flux, h1, h2
-   integer :: i
-
-   total_flux = 0.0d0
-   do i = 2, num_points - 1, 2
-      h1 = energy_grid(i) - energy_grid(i-1)
-      h2 = energy_grid(i+1) - energy_grid(i)
-      total_flux = total_flux + (h1 + h2) / 6.0 * (flux_values(i-1) + 4*flux_values(i) + flux_values(i+1))
-   end do
-end function simpson_rule
-
 subroutine intToStringMapping(n, label)
    implicit none
    integer, intent(in) :: n      ! Input integer
@@ -1597,3 +1570,87 @@ subroutine intToStringMapping(n, label)
    end select
 end subroutine intToStringMapping
 
+module integration
+   ! Interpolating function for flux values at non-grid points
+   ! Interpolating function for flux values at non-grid points
+contains
+
+   function trapezoidal_integration(energy_grid, flux_values, num_points) result(total_flux)
+      implicit none
+      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      integer, intent(in) :: num_points
+      real(kind=8) :: total_flux
+      integer :: i
+
+      total_flux = 0.0d0
+      do i = 1, num_points - 1
+         total_flux = total_flux + 0.5d0 * (flux_values(i) + flux_values(i + 1)) * (energy_grid(i + 1) - energy_grid(i))
+      end do
+   end function trapezoidal_integration
+
+   function simpson_integration(energy_grid, flux_values, num_points) result(total_flux)
+      implicit none
+      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      integer, intent(in) :: num_points
+      real(kind=8) :: total_flux, h1, h2
+      integer :: i
+
+      total_flux = 0.0d0
+      do i = 2, num_points - 1, 2
+         h1 = energy_grid(i) - energy_grid(i-1)
+         h2 = energy_grid(i+1) - energy_grid(i)
+         total_flux = total_flux + (h1 + h2) / 6.0d0 * (flux_values(i-1) + 4.0d0*flux_values(i) + flux_values(i+1))
+      end do
+   end function simpson_integration
+
+   function flux_interpolation(x, energy_grid, flux_values, num_points) result(fx)
+      real(8), intent(in) :: x
+      real(8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      integer, intent(in) :: num_points
+      real(8) :: fx
+      integer :: j
+
+      fx = 0.0d0  ! Initialize return value to avoid undefined behavior
+      ! Simple linear interpolation between nearest points
+      do j = 1, num_points - 1
+         if (x >= energy_grid(j) .and. x <= energy_grid(j+1)) then
+            fx = flux_values(j) + (flux_values(j+1) - flux_values(j)) / &
+               (energy_grid(j+1) - energy_grid(j)) * (x - energy_grid(j))
+            return
+         endif
+      end do
+
+      ! If x is outside the grid range, extrapolate linearly from the closest interval
+      if (x < energy_grid(1)) then
+         fx = flux_values(1)
+      elseif (x > energy_grid(num_points)) then
+         fx = flux_values(num_points)
+      endif
+   end function flux_interpolation
+
+   function rk4_integration(energy_grid, flux_values, num_points) result(total_flux)
+      implicit none
+      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      integer, intent(in) :: num_points
+      real(kind=8) :: total_flux, h, x, k1, k2, k3, k4, F
+      integer :: i
+
+      F = 0.0d0  ! Initial value of the integral
+
+      ! Use RK4 to integrate the flux over the energy grid
+      do i = 1, num_points - 1
+         x = energy_grid(i)
+         h = energy_grid(i + 1) - energy_grid(i)  ! Step size for this interval
+
+         ! RK4 calculations
+         k1 = h * flux_values(i)
+         k2 = h * flux_interpolation(x + 0.5d0 * h, energy_grid, flux_values, num_points)
+         k3 = h * flux_interpolation(x + 0.5d0 * h, energy_grid, flux_values, num_points)
+         k4 = h * flux_interpolation(x + h, energy_grid, flux_values, num_points)
+         F = F + (k1 + 2.0d0*k2 + 2.0d0*k3 + k4) / 6.0d0
+      end do
+
+      total_flux = F
+   end function rk4_integration
+
+end module integration
