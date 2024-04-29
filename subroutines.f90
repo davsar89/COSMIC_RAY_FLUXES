@@ -1570,9 +1570,10 @@ subroutine intToStringMapping(n, label)
    end select
 end subroutine intToStringMapping
 
+! module contains several integration functions
+
 module integration
-   ! Interpolating function for flux values at non-grid points
-   ! Interpolating function for flux values at non-grid points
+
 contains
 
    function trapezoidal_integration(energy_grid, flux_values, num_points) result(total_flux)
