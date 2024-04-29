@@ -1544,10 +1544,10 @@ subroutine create_log_grid(min_val, max_val, grid_out, npoints)
    end do
 end subroutine create_log_grid
 
-subroutine intToStringMapping(n, label)
+subroutine ID_to_string_mapping(n, label)
    implicit none
-   integer, intent(in) :: n      ! Input integer
-   character(len=10), intent(out) :: label   ! Output label
+   integer, intent(in) :: n      ! Input integer ID
+   character(len=10), intent(out) :: label   ! Output string label
 
    ! Associate integers with strings
    select case (n)
@@ -1568,7 +1568,7 @@ subroutine intToStringMapping(n, label)
     case default
       label = 'undefined'
    end select
-end subroutine intToStringMapping
+end subroutine ID_to_string_mapping
 
 ! module contains several integration functions
 

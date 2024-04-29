@@ -59,7 +59,7 @@ program electron_fluxes
       read *, alti
    endif
 
-   call intToStringMapping(ip, name)
+   call ID_to_string_mapping(ip, name)
 
    ! Output the entered values to confirm
    print *, 'Particle ID: ', ip ,'(',trim(name),')'
