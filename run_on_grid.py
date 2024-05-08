@@ -75,9 +75,9 @@ if __name__ == "__main__":
 
     with open(output_file, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Particle ID (0:neut, 1-28:ions, 29-30:mu+-, 31:e-, 32:e+, 33:ph)', 'Energy Threshold (MeV)', 'Altitude (kilometers)', 'Energy Integrated Flux (cm^-2 s^-1)'])
+        writer.writerow(['Particle ID (0:neut, 1-28:ions, 29-30:mu+-, 31:e-, 32:e+, 33:ph)', 'Energy Threshold (MeV)', 'Altitude (kilometers)', 'Energy Integrated Flux (cm^-2 s^-1)','latitude','longitude'])
         for ii in range(len(energy_threshold_list)):
-            writer.writerow([ID_list[ii],energy_threshold_list[ii], altitude_list[ii], energy_integrated_flux_list[ii]])
+            writer.writerow([ID_list[ii],energy_threshold_list[ii], altitude_list[ii], energy_integrated_flux_list[ii], latitude, longitude])
 
 
     # Plot energy_integrated_flux versus altitude
