@@ -3,9 +3,9 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 
-def run_executable_with_parameters(ID_nb, energy_thres, altitude):
+def run_executable_with_parameters(ID_nb, energy_thres, altitude, lat, longg):
     # Run the executable with parameters and capture the output
-    command = ['./electron_fluxes', str(ID_nb), str(energy_thres), str(altitude)]
+    command = ['./electron_fluxes', str(ID_nb), str(energy_thres), str(altitude), str(lat), str(longg)]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
@@ -40,6 +40,11 @@ if __name__ == "__main__":
     ID_nb = 31 # (Particle ID, 0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)
 
     ID_list = []
+    
+    latitude = 28.7
+    longitude = -80.8
+    
+    print(f"Selected latitude: {latitude} longitude: {longitude}")
 
     eners_thresholds_MeV = [0.3, 1] # MeV
     altitudes_km = np.arange(10, 20 + 0.2, 0.2)
@@ -53,7 +58,7 @@ if __name__ == "__main__":
 
             #energy_thres_MeV = 0.3  # Example value for the first parameter
             #altitude_km = 10.0  # Example value for the second parameter
-            _, _, energy_integrated_flux = run_executable_with_parameters(ID_nb, energy_thres_MeV, altitude_km)
+            _, _, energy_integrated_flux = run_executable_with_parameters(ID_nb, energy_thres_MeV, altitude_km,latitude,longitude)
 
             if energy_integrated_flux is not None:
                 print("Energy Integrated Flux:", energy_integrated_flux, "cm^-2 s^-1")
@@ -81,7 +86,7 @@ if __name__ == "__main__":
     plt.plot(altitude_list[0:nn], energy_integrated_flux_list[0:nn], label='Min energy thres = 0.3 MeV')
     plt.xlabel('Altitude (kilometers)')
     plt.ylabel('Angular and Energy Integrated Flux (cm^-2 s^-1)')
-    plt.title('Electrons')
+    plt.title(f'Electrons, latitude: {latitude}, longitude: {longitude}')
     plt.grid(True)
     plt.plot(altitude_list[nn+1:], energy_integrated_flux_list[nn+1:], label='Min energy thres = 1.0 MeV')
     plt.legend()

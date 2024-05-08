@@ -59,6 +59,22 @@ program electron_fluxes
       print *, 'Please enter an altitude in kilometers:'
       read *, alti
    endif
+   
+   call get_command_argument(4, arg, iostat)
+   if (len_trim(arg) > 0) then
+      read(arg, *) glat
+   else
+      print *, 'Please enter a geographic latitude in degrees:'
+      read *, glat
+   endif
+   
+   call get_command_argument(5, arg, iostat)
+   if (len_trim(arg) > 0) then
+      read(arg, *) glong
+   else
+      print *, 'Please enter a geographic longitude in degrees:'
+      read *, glong
+   endif
 
    call ID_to_string_mapping(ip, name)
 
@@ -66,6 +82,8 @@ program electron_fluxes
    print *, 'Particle ID: ', ip ,'(',trim(name),')'
    print '(A, F10.2, A)', ' Energy Threshold: ', emin, ' MeV'
    print '(A, F17.1, A)', ' Altitude: ', alti, '  kilometers'
+   print '(A, F17.1, A)', ' Latitude: ', glat, '  degrees'
+   print '(A, F17.1, A)', ' Longitude: ', glong, '  degrees'
 
    s=getHP(iyear,imonth,iday,idummy) ! Solar activity (W index) of the day
    r=getr(glat,glong)                ! Vertical cut-off rigidity (GV)
