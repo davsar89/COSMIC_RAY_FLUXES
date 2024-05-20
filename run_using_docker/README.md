@@ -1,12 +1,11 @@
-Using Docker, deploy the GEANT4 code rapidly on any computer (Linux, Mac Windows) and run simulations (but not for GUI and easy developement).
+Using Docker, deploy the run rapidly on any computer (Linux, Mac, Windows).
 
 Requires `docker` and `docker-compose` installed.
 
 Commands to run :
-* `docker-compose up`
+* `docker compose build`
+* `docker compose up`
 
-Output files produced by GEANT4 are written in the `./output` folder (it is `./output_ascii` in the container and/or if used without docker).
+Will grab an Ubuntu 22.04 image and install dependencies (`gfortran`, ...). Will then compile and run executable `electron_fluxes`.
 
-Will grab an Ubuntu 22.04 image with the full install Geant4 10.7.3 and dependencies, data. Will then compile and run the Geant4 project.
-
-Modify the bash command and the end of the file `docker-compose.yml` to adapt it to another Geant4-based code.
+Modify the command and the end of the file `docker-compose.yml` to change input parameters for the executable `electron_fluxes` (`particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)`, `altitude (km)`, `latitude (deg)` and `longitude`).
