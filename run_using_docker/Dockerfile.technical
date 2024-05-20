@@ -1,10 +1,9 @@
 FROM ubuntu:jammy
 
 RUN apt-get update -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install python3 -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install python3-pip -y
 RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install git -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install cmake build-essential gcc g++ gfortran zlib1g-dev -y
+RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install cmake build-essential gcc g++ gfortran -y
+RUN rm -rf /COSMIC_RAY_FLUXES || true
 RUN git clone https://github.com/davsar89/COSMIC_RAY_FLUXES.git
 
 

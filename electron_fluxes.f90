@@ -98,7 +98,7 @@ program electron_fluxes
    !call output_array(energy_grid, npoints_ener)
 
    Flux = getSpec(ip,s,r,d,ee,g)
-   print '(A, ES8.2, A, ES10.2)', ' Angular Integrated Flux (/cm2/s/(MeV/n)) for ', ee, ' MeV =>', Flux
+   print '(A, ES8.2, A, ES10.2)', ' (Angular Integrated Flux (/cm2/s/(MeV/n)) for ', ee, ' MeV =>', Flux, ')'
    !if(IangPart(ip).ne.0) then ! Angular distribution is available for the particle
    !   DifFlux=Flux*getSpecAngFinal(iangpart(ip),s,r,d,e,g,ang)
    !   write(6,*) 'Angular Differential Flux(/cm2/s/(MeV/n)/sr)=',DifFlux
