@@ -2,11 +2,13 @@
 
 * Requirements: a Fortran 90 compiler (like `gfortran`), and optionally `python`.
 * Open a terminal and run `make` command to compile the Fortran 90 code and produce executable `electron_fluxes`
-* the executable `electron_fluxes` takes 3 input arguments : `particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)` and `altitude (km)`.
-* the fortran code just processes one ID(type), one energy threshold and one altitude at a time.
+* the executable `electron_fluxes` takes 5 input arguments : `particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)`, `altitude (km)`, `latitude (deg)` and `longitude`.
+* the fortran code just processes one set of parameters at a time.
 * the python script `run_on_grid.py` runs the compiled executable 
 `electron_fluxes` for a range of input parameters, outputs the results in `.csv` file, and plots results in a `.png` file.
 * example results are showed in `results.csv` and `flux_vs_altitude_electron.png`
+
+* use instructions in folder `run_using_docker` to run in any platform using docker.
 
 ![image](flux_vs_altitude_electron.png)
 
