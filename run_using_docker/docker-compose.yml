@@ -16,4 +16,4 @@ services:
       && ./electron_fluxes 31 0.3 15 20 -80
       "
     # input arguments are `particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)`, `altitude (km)`, `latitude (deg)` and `longitude`.
-      
+    # here: 31 is electron, 0.3 (MeV) is min energy threshold, 15 (km) is altitude, 20 (deg) is latitude, -80 (deg) is longitude
