@@ -35,7 +35,7 @@ This creates `./electron_fluxes` (`electron_fluxes.exe` on Windows). Build produ
 make clean
 ```
 
-A runtime-checked build is available with `make debug`. Run the regression suite with `make test`.
+A runtime-checked build is available with `make debug`, a strict-warning build with `make diagnostics`, and the Python driver can be launched with `make run-grid`. Run the regression suite with `make test`, which additionally requires Python 3.
 
 ## Single calculation
 
