@@ -1,11 +1,19 @@
-Using Docker, deploy the run rapidly on any computer (Linux, Mac, Windows).
+# Docker usage
 
-Requires `docker` and `docker-compose` installed.
+Run these commands from the project root:
 
-Commands to run :
-* `docker compose build`
-* `docker compose up`
+```bash
+docker compose -f run_using_docker/docker-compose.yml build
+docker compose -f run_using_docker/docker-compose.yml up --abort-on-container-exit
+```
 
-Will grab an Ubuntu 22.04 image and install dependencies (`gfortran`, ...). Will then compile and run executable `electron_fluxes`.
+The image is built from the reviewed local source tree; it does not clone a mutable remote repository. It is named `cosmic-ray-fluxes:local`, runs as an unprivileged user, and contains only the compiled executable, its runtime library, and the required model input tables.
 
-Modify the command and the end of the file `docker-compose.yml` to change input parameters for the executable `electron_fluxes` (`particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)`, `altitude (km)`, `latitude (deg)` and `longitude`).
+To run a different calculation without editing the Compose file:
+
+```bash
+docker compose -f run_using_docker/docker-compose.yml run --rm cosmic-ray-flux \
+  33 0.3 15 20 -80 2019 5 27 0.15 standard
+```
+
+Arguments are documented in the project-level `README.md`. Pin `UBUNTU_VERSION` to an immutable image digest in controlled production builds when byte-for-byte reproducibility is required.

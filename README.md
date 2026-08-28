@@ -1,115 +1,169 @@
-### Calculates the fluxes (/cm²/s) of cosmic (secondary) particles as a function of altitude (angular and energy integrated), based on the PARMA program (Fortran 90). An illustrative example is included for electrons with min energy thresholds set at 0.3 and 1 MeV, and altitudes between 10 and 20 km.
+# Atmospheric cosmic-ray flux calculator
 
-* Requirements: a Fortran 90 compiler (like `gfortran`), and optionally `python`.
-* Open a terminal and run `make` command to compile the Fortran 90 code and produce executable `electron_fluxes`
-* the executable `electron_fluxes` takes 5 input arguments : `particle ID (0:neutron, 1-28:H-Ni, 29-30:muon+-, 31:e-, 32:e+, 33:photon)`, `min energy threshold (MeV)`, `altitude (km)`, `latitude (deg)` and `longitude`.
-* the fortran code just processes one set of parameters at a time.
-* the python script `run_on_grid.py` runs the compiled executable 
-`electron_fluxes` for a range of input parameters, outputs the results in `.csv` file, and plots results in a `.png` file.
-* example results are showed in `results.csv` and `flux_vs_altitude_electron.png`
+This project calculates angular- and energy-integrated atmospheric cosmic-ray fluxes with the PARMA model. The executable retains its historical name, `electron_fluxes`, but supports neutrons, ions, muons, electrons, positrons, and photons.
 
-* use instructions in folder `run_using_docker` to run in any platform using docker.
+The supplied Python driver evaluates a grid of thresholds and altitudes, writes a CSV file, and optionally creates a plot.
 
-![image](flux_vs_altitude_electron.png)
+## Requirements
 
-*
-* Below is slightly edited original README file from the PARMA code
-*
+For the model executable:
 
+- GNU Fortran or another compatible Fortran compiler
+- `make` on Linux/macOS; on Windows, MinGW-w64 `gfortran` with `mingw32-make` works out of the box
+
+For plotting with `run_on_grid.py`:
+
+```bash
+python3 -m pip install -r requirements.txt
 ```
-PARMA4 can calculate the atmospheric cosmic-ray fluxes & dose rates.
-Details of the model is described in
-T.Sato, Analytical model for estimating terrestrial cosmic-ray fluxes nearly anytime and anywhere in the world; Extension of PARMA/EXPACS, 10(12): e0144679 (2015)
-T.Sato, Analytical model for estimating the zenith angle dependence of terrestrial cosmic ray fluxes, PLOS ONE, 11(8): e0160390 (2016)
-This program is designed to be implemented in some other systems such as route-dose calculation systems. 
-If you would like to calculate cosmic-ray fluxes or doses at certain conditions, 
-it is much easier to use EXPACS.
-You can download EXPACS from the webiste below
-http://phits.jaea.go.jp/expacs
 
-Table of contents
-  README.md.txt:      This file
-  electron_fluxes.f90: Added to calculate electron fluxes (number per cm2) at a given altitude and for a given minimum energy threshold
-  main.f90:        Main program of PARMA for calculating cosmic-ray fluxes & doses
-  main-simple.f90: Main program for calculating flux at a certain condition (easy to start up)
-  main-generation.f90: Main program for generating energy and direction of cosmic-rays at a certain condition (for Monte Carlo simulation)
-  subroutines.f90: Subroutines of PARMA
-  CheckGeneration.out: Sample output file from main-generator.f90
-  /AngOut:         Sample output files for angular distribution calculation
-  /condition:      Sample input files for flux & dose calculation
-  /dcc:            Database for fluence to dose (or other quantity) conversion coefficients
-  /Doseout:        Sample output files for dose calculation
-  /input:          Databases used in PARMA
-  /SpecOut:        Sample output files for flux calculation
-  NOT EXHAUSTIVE
+The Python driver itself uses only the standard library when `--no-plot` is selected. On Windows, substitute `python` for `python3` in the commands below.
 
-Q1. How to use?
-A1. You have to compile the programs using a Fortran compiler.
-    Intel Fortran or Gfortran are recommended to be used.
+## Build
 
-Q2. How to compile and execute?
-A2. To start up, it is easier to use main-simple.f90 as the control routine.
-    In that case, you have to compile main-simple.f90 and subroutines.f90 at once.
-    The followings are an example of commands that should be typed (Gfortran case)
-    > gfortran main-simple.f90 subroutines.f90
-    > a.exe
-    For compiling main-generator.f90 using gfortran, 
-    you have to set "-fno-range-check" option as follows:
-    > gfortran main-generator.f90 subroutines.f90 -fno-range-check
+From the project root:
 
-Q3. How to change the condition?
-A3. You can change the condition such as time and location by changing
-    the parameters written in main-simple.f90.
+```bash
+make
+```
 
-Q4. How to use this program as an event generator?
-A4. You have to use main-generator.f90 instead of main-simple.f90 as the control routine.
-    You have to specify the energy and angle ranges for generation, as well as the
-    number of particles to be generated. 
-    The variables e,u,v,w are the energy & direction vector of the generated particle.
-    Total flux (/cm2/s) is output in "CheckGeneration.out" file.
+On Windows, run `mingw32-make` instead; the `Makefile` detects the platform automatically.
 
-Q5. How to calculate dose?
-A5. You have to use main.f90 instead of main-simple.f90 as the control routine.
-    To specify the calculation condition, you have to make your own input file
-    in "condition" folder by referring sample input files such as "Tokyo-Smin.inp".
-    At the 1st line of the input file, you have to specify isout and istyle parameters.
-    isout=0: No output for flux data for each condition, =1: Output Flux data in "SpecOut" folder
-    istyle= 0:Direct input (s****-r***-d****-g***)
-          = 1:year.month, latitude, longitude, atmospheric detph(g/cm^2), g(direct input)
-          = 2:year.month, latitude, longitude, altitude (m), g(direct input) 
-          = 3:year.month, latitude, longitude, altitude (ft), g(direct input)
-          = 4:year.month, cutoff rigidity, altitude (m), g(direct input)
-    After 2nd lines, you have to specify the conditions
+This creates `./electron_fluxes` (`electron_fluxes.exe` on Windows). Build products, including all `.mod` files, are removed by:
 
-Q6. How to change the surrounding conditions, such as ground or aircraft
-A6. You have to change "g" parameter.
-    If you want to calculate the cosmic-ray spectra in the ideal atmosphere
-    (i.e. without considering the surrounding effect), you should set g=10.0
-    If you want to calculate the ground level cosmic-ray spectra, you should
-    set 0 =< g =< 1. In this case, "g" means the water fraction in ground.
-    Ground level muon correction is also considered in this mode.
-    If you do not know the water fraction at your specified location, 
-    I recommended to use 0.15 for "g".
-    If you want to calculate the cosmic-ray spectra in aircraft, you should
-    set -10 < g < 0. In this case, the absolute value of "g" indicates
-    the mass of the aircraft in the unit of 100 ton. 
-    It should be noted that only neutron spectrum is influenced by 
-    the surrounding condition.
-    If you want to calculate the angular differential cosmic-ray fluxes without
-    the albedo from the Earth (i.e. black hole mode), you should set g=100.0.
+```bash
+make clean
+```
 
-Q7. How to calculate other quantity such as count rates of neutron monitor?
-A7. You can select the evaluation quantity by changing "dccname" parameter in "main.f90".
-    Four quantities can be calculated, which are the effective dose for isotropic
-    irradiation, H*(10), dose rate in air, and count rate of 6 tube neutron monitor.
+A runtime-checked build is available with `make debug`. Run the regression suite with `make test`.
 
-Q8. What is the conditions to use this program?
-A8. For non-commercial use, you should refer the following manuscripts in any published use of this program,
-    T.Sato, Analytical model for estimating terrestrial cosmic-ray fluxes nearly anytime and anywhere in the world; Extension of PARMA/EXPACS, 10(12): e0144679 (2015)
-    T.Sato, Analytical model for estimating the zenith angle dependence of terrestrial cosmic ray fluxes, PLOS ONE, 11(8): e0160390 (2016)
-    The commercial use of this program is NOT allowed with a prior agreement with JAEA
+## Single calculation
 
-Acknowledgement
-  This program uses a random generator based on Mersenne Twister method,
-  which is developed by Prof. M. Matsumoto of Hiroshima University.
-  ```
+```text
+./electron_fluxes PARTICLE_ID E_MIN ALT_KM LAT_DEG LON_DEG \
+  [YEAR [MONTH [DAY [GEOMETRY [ATMOSPHERE [SOLAR_W]]]]]]
+```
+
+The first five arguments are required. Optional positional arguments must be supplied in order.
+
+| Argument | Meaning |
+|---|---|
+| `PARTICLE_ID` | `0` neutron; `1–28` H through Ni; `29` muon+; `30` muon−; `31` electron; `32` positron; `33` photon |
+| `E_MIN` | Minimum kinetic energy. Units are MeV/nucleon for ion IDs `1–28`, and MeV for all other particles. It must be greater than zero and below the fixed upper limit of `1e14`. |
+| `ALT_KM` | Altitude in kilometres. Valid ranges are −0.5 to 86 km for `standard`, and −0.6 to 99 km for `msis`. |
+| `LAT_DEG` | Geographic latitude from −90 to 90 degrees. |
+| `LON_DEG` | Geographic longitude from −180 to 180 degrees. |
+| `YEAR MONTH DAY` | Date used to look up the bundled solar W index. The default is `2019 5 27`, the latest valid daily value in the supplied table. |
+| `GEOMETRY` | Surrounding-environment parameter. The default is `0.15`. See “Geometry” below. |
+| `ATMOSPHERE` | `standard`/`us76`/`0` for US Standard Atmosphere 1976, or `msis`/`nrlmsise`/`1` for the bundled NRLMSISE-00 table. |
+| `SOLAR_W` | Optional finite, nonnegative W-index override. When present, the date is recorded but not used for solar lookup. |
+
+Example using the bundled daily solar data:
+
+```bash
+./electron_fluxes 31 0.3 15 20 -80 2019 5 27 0.15 standard
+```
+
+Example for a date outside the bundled tables, using an explicit solar W index:
+
+```bash
+./electron_fluxes 31 0.3 15 20 -80 2024 7 29 0.15 standard 50
+```
+
+Invalid identifiers, non-finite values, unavailable solar dates, and out-of-range coordinates or altitudes terminate with a nonzero exit status. The program no longer clamps an invalid altitude or returns a plausible value after an out-of-bounds array access.
+
+### Solar-data behavior
+
+The model first uses daily neutron-monitor data when available. Missing daily data fall back to the bundled annual Usoskin/Wolf-number table. A request with no daily or annual value fails rather than silently substituting zero solar activity.
+
+The output identifies the source with a status code:
+
+- `0`: user-provided `SOLAR_W`
+- `1`: daily neutron-monitor value
+- `2`: annual fallback value
+- `3`: daily value marked as a suspected ground-level event, after removal of the table’s encoding offset
+
+### Geometry
+
+The geometry parameter affects the neutron model:
+
+- `0 <= g <= 1`: ground environment; `g` is the water fraction. Use `0.15` when unknown.
+- `-10 < g < 0`: pilot/aircraft model; the magnitude encodes aircraft mass in the upstream parameterization.
+- `g < -10`: cabin/passenger aircraft model.
+- `g >= 10`: idealized no-Earth/semi-infinite-atmosphere mode. Values at or above `100` are also used by PARMA angular routines for black-hole mode.
+
+The ambiguous value `g = -10` and the unsupported interval `1 < g < 10` are rejected.
+
+### Atmosphere selection
+
+`standard` uses the bundled US Standard Atmosphere 1976 depth table. `msis` uses the supplied latitude-dependent NRLMSISE-00 table, which is a static climatological table rather than a live atmosphere calculation.
+
+### Photon annihilation line
+
+For particle ID `33`, the integrated result includes the separate 511 keV annihilation-line contribution whenever `E_MIN <= 0.511 MeV`. The human-readable output reports the continuum, line, and combined total independently.
+
+### Machine-readable output
+
+Every successful run ends with one `RESULT_CSV` record. `run_on_grid.py` parses this record instead of scraping display text. Its fields are:
+
+```text
+particle_id, min_energy, max_energy, altitude, latitude, longitude,
+year, month, day, solar_w, solar_status, rigidity_gv,
+atmospheric_depth_g_cm2, geometry, atmosphere_model,
+continuum_flux, line_511_flux, total_flux
+```
+
+## Grid calculations
+
+The default command reproduces the electron altitude scan at thresholds of 0.3 and 1 MeV:
+
+```bash
+python3 run_on_grid.py
+```
+
+Useful options include:
+
+```bash
+python3 run_on_grid.py \
+  --particle-id 33 \
+  --thresholds 0.3 1.0 \
+  --altitude-min 10 --altitude-max 20 --altitude-step 0.2 \
+  --latitude 28.7 --longitude -80.8 \
+  --year 2019 --month 5 --day 27 \
+  --geometry 0.15 --atmosphere standard \
+  --output photon-results.csv --plot photon-flux.png
+```
+
+Use `--solar-w VALUE` to override the date lookup, `--no-plot` to avoid the Matplotlib dependency, and `--show` to open an interactive plot after saving. Paths are resolved independently of the caller’s current working directory, subprocesses have a configurable timeout, failed model runs stop the grid calculation, and flux values are written with scientific precision rather than rounded to four decimal places.
+
+## Docker
+
+The Docker build copies the reviewed local source instead of cloning a mutable remote repository:
+
+```bash
+docker compose -f run_using_docker/docker-compose.yml build
+docker compose -f run_using_docker/docker-compose.yml up --abort-on-container-exit
+```
+
+See `run_using_docker/README.md` for command overrides.
+
+## Numerical integration
+
+The energy grid contains 1025 logarithmically spaced points, giving 1024 intervals. Integration is performed in `ln(E)` coordinates with the Jacobian `dE = E dln(E)`, so composite Simpson weights are applied on a genuinely uniform grid and no final interval is omitted. The integration module also contains a corrected unequal-spacing Simpson routine for other callers.
+
+## Tests
+
+```bash
+make test
+```
+
+The tests cover the integration routines, all particle IDs `0–33`, invalid boundaries, nonzero failure exits, historical annual solar fallback, explicit solar override, atmosphere selection, neutron geometry effects, the 511 keV photon line, and Python path handling.
+
+## Scientific attribution and use terms
+
+The underlying PARMA model is described in:
+
+1. T. Sato, “Analytical model for estimating terrestrial cosmic ray fluxes nearly anytime and anywhere in the world: Extension of PARMA/EXPACS,” *PLOS ONE* 10(12), e0144679 (2015).
+2. T. Sato, “Analytical model for estimating the zenith angle dependence of terrestrial cosmic ray fluxes,” *PLOS ONE* 11(8), e0160390 (2016).
+
+The original materials state that non-commercial users should cite these publications and that commercial use requires prior agreement with JAEA. The supplied archive does not contain a standard open-source license grant; consult `LICENSE` and confirm applicable rights with JAEA before redistribution or commercial use.

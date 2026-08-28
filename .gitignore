@@ -1,0 +1,17 @@
+# Fortran build products
+electron_fluxes
+electron_fluxes.exe
+*.o
+*.mod
+tests/test_integration
+tests/test_integration.exe
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local generated outputs
+results.local.csv
+flux_vs_altitude_*.local.png
+run_using_docker/output/

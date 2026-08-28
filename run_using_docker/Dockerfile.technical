@@ -1,9 +1,30 @@
-FROM ubuntu:jammy
+ARG UBUNTU_VERSION=22.04
 
-RUN apt-get update -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install git -y
-RUN DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install cmake build-essential gcc g++ gfortran -y
-RUN rm -rf /COSMIC_RAY_FLUXES || true
-RUN git clone https://github.com/davsar89/COSMIC_RAY_FLUXES.git
+FROM ubuntu:${UBUNTU_VERSION} AS builder
 
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+       gfortran \
+       make \
+    && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /build
+COPY Makefile electron_fluxes.f90 subroutines.f90 ./
+COPY input ./input
+RUN make clean && make
+
+FROM ubuntu:${UBUNTU_VERSION} AS runtime
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y libgfortran5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 cosmic
+
+WORKDIR /opt/cosmic-ray-fluxes
+COPY --from=builder /build/electron_fluxes ./electron_fluxes
+COPY --from=builder /build/input ./input
+RUN chown -R cosmic:cosmic /opt/cosmic-ray-fluxes
+
+USER cosmic
+ENTRYPOINT ["./electron_fluxes"]
+CMD ["31", "0.3", "15", "20", "-80", "2019", "5", "27", "0.15", "standard"]

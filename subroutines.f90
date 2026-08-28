@@ -17,9 +17,13 @@ function getSpec(ip,s,r,d,e,g)
    elseif(ip.eq.29.or.ip.eq.30) then ! Muon
       iptmp=ip-28
       getSpec=getMuonSpec(iptmp,s,r,d,e)
-   else
+   elseif(ip.ge.31.and.ip.le.33) then
       iptmp=ip-28 ! 3:electron, 4:positron, 5:photon
       getSpec=getsecondary(iptmp,s,r,d,e)
+   else
+      ! Invalid particle identifiers are rejected by the caller.  Keep the
+      ! library routine memory-safe for external callers by returning zero.
+      getSpec=0.0d0
    endif
 
    return
@@ -322,11 +326,12 @@ subroutine getGpara(g,geo) ! get surroudning environment parameters
    parameter(nG=6) ! number of geometry parameter
    dimension geo(nG) ! geometry parameter
    real*8, save:: P(24) ! Input parameters read from input file, P(1)-P(3) from Geo-Dep, P(4)-P(14) from Water-Dep, P(15)-P(24) from aircraft-dep
+   logical, save:: initialized=.false.
    character chatmp1*1,chatmp4*4
 
 1001 format(a4,1x,30e13.5)
 
-   if(P(1).eq.0.0) then
+   if(.not.initialized) then
       open(unit=3,file='input/neutro/Geo-Dep.inp',status='old')
       read(3,'(a)') chatmp1
       read(3,*) p(1),p(2),p(3)
@@ -342,6 +347,7 @@ subroutine getGpara(g,geo) ! get surroudning environment parameters
       read(3,*) (p(ip),ip=15,19)  ! for pilot location
       read(3,*) (p(ip),ip=20,24)  ! for passenger & small aircraft configuration
       close(Unit=3)
+      initialized=.true.
    endif
 
    if(g.ge.10.0) then ! in semi-infite atmosphere
@@ -376,8 +382,9 @@ function getA4(r,d)  ! get A4 value, s:solar modulation potential, r:Cut off rig
    parameter (nAdata=6) ! A(1) - A(6) : B = A(1)+A(2)/(1+exp((r-A(3))/A(4))), A(5):A(1) for APmax, A(6):A(3) for APmax
    character chatmp1*1,chatmp5*5
    real*8, save:: A(nAdata),B(nBdata)
+   logical, save:: initialized=.false.
 
-   if(B(2).eq.0.0) then ! first time
+   if(.not.initialized) then ! first time
       open(unit=15,file='input/neutro/Depth-Dep-mid.out',status='old')  ! read B(2)-B(4) (independent of s,r,d)
       read(15,'(a)') chatmp1
       read(15,'(a)') chatmp1
@@ -389,6 +396,7 @@ function getA4(r,d)  ! get A4 value, s:solar modulation potential, r:Cut off rig
       enddo
       read(15,1010) chatmp5,(A(ia),ia=1,nAdata)
       close(unit=15)
+      initialized=.true.
    endif
 1010 format(a5,30e13.5)
 
@@ -406,8 +414,9 @@ function getA12(r,d)  ! get Fl value, s:solar modulation potential, r:Cut off ri
    parameter (nAdata=6) ! A(1) - A(6) : B = A(1)+A(2)/(1+exp((r-A(3))/A(4))), A(5):A(1) for APmax, A(6):A(3) for APmax
    character chatmp1*1,chatmp5*5
    real*8, save:: A(nBdata,nAdata),B(nBdata)
+   logical, save:: initialized=.false.
 
-   if(B(4).eq.0.0) then ! first time
+   if(.not.initialized) then ! first time
       open(unit=15,file='input/neutro/Depth-Dep-hig.out',status='old')  ! read B(2),B(4) (independent of s,r,d)
       read(15,'(a)') chatmp1
       read(15,'(a)') chatmp1
@@ -421,6 +430,7 @@ function getA12(r,d)  ! get Fl value, s:solar modulation potential, r:Cut off ri
          read(15,1010) chatmp5,(A(ib,ia),ia=1,nAdata)
       enddo
       close(unit=15)
+      initialized=.true.
    endif
 1010 format(a5,30es13.5)
 
@@ -952,79 +962,112 @@ end
 
 
 ! ******************************************************
-function getd(alti,cido) ! getd in g/cm^2, alti in km
-! if -90 < cido < 90, use MSIS database
-! else, use US standard air 1976
+function getd(alti,cido) ! compatibility wrapper: US Standard Atmosphere 1976
 ! ******************************************************
-   parameter(iMSIS=0)  ! 0:US standard atmosphere, 1:NRLMSISE database
-   parameter(maxUS=75) ! number of altitude bin for US-Standard Air
-   parameter(maxMSIS=129) ! number of altitude bin for NRLMSISE-00
-   parameter(maxlat=36) ! number of latitude bin for NRLMSISE-00
    implicit real*8 (a-h, o-z)
-   real*8, save:: altUS(maxUS) ! altitude data for US-Standard Air 1976
-   real*8, save:: altMSIS(maxMSIS) ! altitude data for NRLMSISE-00
-   real*8, save:: depUS(maxUS) ! atmospheric depth data for US-Standard Air 1976
-   real*8, save:: depMSIS(maxMSIS,maxlat) ! atmospheric depth data for each altitude & latitude for NRLMSISE-00
-   real*8, save:: glat(maxlat) ! latitude data
-   integer*4, save:: ifirst
+   integer istat
+
+   getd=getd_model(alti,cido,0,istat)
+   return
+end
+
+! ******************************************************
+function getd_model(alti,cido,iMSIS,istat) ! atmospheric depth in g/cm^2, altitude in km
+! iMSIS=0: US Standard Atmosphere 1976; iMSIS=1: bundled NRLMSISE-00 table
+! istat=0: success, 1: altitude too low, 2: altitude too high,
+!       3: table I/O error, 4: invalid model
+! ******************************************************
+   parameter(maxUS=75) ! number of altitude bins for US Standard Atmosphere
+   parameter(maxMSIS=129) ! number of altitude bins for NRLMSISE-00
+   parameter(maxlat=36) ! number of latitude bins for NRLMSISE-00
+   implicit real*8 (a-h, o-z)
+   real*8, save:: altUS(maxUS)
+   real*8, save:: altMSIS(maxMSIS)
+   real*8, save:: depUS(maxUS)
+   real*8, save:: depMSIS(maxMSIS,maxlat)
+   real*8, save:: glat(maxlat)
+   logical, save:: initialized=.false.
    character chatmp1*1
-   data ifirst/0/
+   integer ios
 
-   if(ifirst.eq.0) then ! come to this routine first, so read input data
-      ifirst=1
-      open(unit=15,file='input/AtomDepth.inp',status='old')
-      read(15,'(a)') chatmp1
-      do ia=1,maxUS ! read US standard air 1976 data
-         read(15,*) altUS(ia),depUS(ia)
-      enddo
-      read(15,'(a)') chatmp1
-      read(15,*) (glat(ido),ido=1,maxlat)
-      do ia=1,maxMSIS ! read NRLMSISE-00 data
-         read(15,*) altMSIS(ia),(depMSIS(ia,ido),ido=1,maxlat)
-      enddo
-   endif
+   getd_model=-1.0d0
+   istat=0
 
-   if((cido.lt.-90.01.or.cido.gt.90.01).or.iMSIS.eq.0) then ! US standard atmosphere 1976 mode
-      do ia=1,maxUS
-         if(altUS(ia).gt.alti) exit
-      enddo
-      if(ia.eq.1) then ! out of range
-         write(6,*) 'Error in function getd'
-         write(6,*) 'Altitude =',alti,' (km) should be higher than',altUS(1),' (km)'
-         stop
-      endif
-      if(ia.eq.maxUS+1) then ! out of range
-         write(6,*) 'Warning in function getd'
-         write(6,*) 'Altitude =',alti,' (km) is too high. It is assumed to be',altUS(maxUS),' (km)'
-         getd=depUS(maxUS)
+   if(.not.initialized) then
+      open(unit=15,file='input/AtomDepth.inp',status='old',action='read',iostat=ios)
+      if(ios.ne.0) then
+         istat=3
          return
       endif
-      ratio=(alti-altUS(ia-1))/(altUS(ia)-altUS(ia-1))
-      getd=depUS(ia-1)+ratio*(depUS(ia)-depUS(ia-1))
-   else ! latitude is specified, so use NRLMSISE-00 data
+      read(15,'(a)',iostat=ios) chatmp1
+      if(ios.ne.0) goto 900
+      do ia=1,maxUS
+         read(15,*,iostat=ios) altUS(ia),depUS(ia)
+         if(ios.ne.0) goto 900
+      enddo
+      read(15,'(a)',iostat=ios) chatmp1
+      if(ios.ne.0) goto 900
+      read(15,*,iostat=ios) (glat(ido),ido=1,maxlat)
+      if(ios.ne.0) goto 900
       do ia=1,maxMSIS
-         if(altMSIS(ia).gt.alti) exit
+         read(15,*,iostat=ios) altMSIS(ia),(depMSIS(ia,ido),ido=1,maxlat)
+         if(ios.ne.0) goto 900
       enddo
-      if(ia.eq.1) then ! out of range
-         write(6,*) 'Error in function getd'
-         write(6,*) 'Altitude =',alti,' (km) should be higher than',altMSIS(1),' (km)'
-         stop
+      close(unit=15)
+      initialized=.true.
+   endif
+
+   if(iMSIS.eq.0) then
+      if(alti.lt.altUS(1)) then
+         istat=1
+         return
+      elseif(alti.gt.altUS(maxUS)) then
+         istat=2
+         return
       endif
-      if(ia.eq.maxMSIS+1) then ! out of range
-         write(6,*) 'Error in function getd'
-         write(6,*) 'Altitude =',alti,' (km) is too high. It is assumed to be',altMSIS(maxMSIS),' (km)'
-         alti=altMSIS(maxMSIS)
-         ia=maxMSIS
+      do ia=2,maxUS
+         if(alti.le.altUS(ia)) exit
+      enddo
+      ratio=(alti-altUS(ia-1))/(altUS(ia)-altUS(ia-1))
+      getd_model=depUS(ia-1)+ratio*(depUS(ia)-depUS(ia-1))
+   elseif(iMSIS.eq.1) then
+      if(alti.lt.altMSIS(1)) then
+         istat=1
+         return
+      elseif(alti.gt.altMSIS(maxMSIS)) then
+         istat=2
+         return
       endif
+      do ia=2,maxMSIS
+         if(alti.le.altMSIS(ia)) exit
+      enddo
       ratio=(alti-altMSIS(ia-1))/(altMSIS(ia)-altMSIS(ia-1))
-      do ido=2,maxlat-1
-         if(glat(ido).gt.cido) exit
-      enddo
-      ratio1=min(1.0,max(0.0,(cido-glat(ido-1))/(glat(ido)-glat(ido-1))))
+
+      if(cido.le.glat(1)) then
+         ido=2
+         ratio1=0.0d0
+      elseif(cido.ge.glat(maxlat)) then
+         ido=maxlat
+         ratio1=1.0d0
+      else
+         do ido=2,maxlat
+            if(cido.le.glat(ido)) exit
+         enddo
+         ratio1=(cido-glat(ido-1))/(glat(ido)-glat(ido-1))
+      endif
       dep1=depMSIS(ia-1,ido-1)+ratio*(depMSIS(ia,ido-1)-depMSIS(ia-1,ido-1))
       dep2=depMSIS(ia-1,ido  )+ratio*(depMSIS(ia,ido  )-depMSIS(ia-1,ido  ))
-      getd=dep1+ratio1*(dep2-dep1)
+      getd_model=dep1+ratio1*(dep2-dep1)
+   else
+      istat=4
+      return
    endif
+   return
+
+900 continue
+   close(unit=15,iostat=ios)
+   istat=3
+   getd_model=-1.0d0
    return
 end
 
@@ -1056,8 +1099,12 @@ function getr(cido,ckei) ! cido and ckei are center of ido&keido of each grid
    endif
 
 ! **** Determine Cut-off Rigidity ***********
-   id=min(mido-1,int((cido+90.0)/sido)+1)   ! lower ido bin
-   ik=min(mkei-1,int((ckei+180.0)/skei)+1)  ! lower keido bin
+   if(cido.lt.-90.0d0.or.cido.gt.90.0d0.or.ckei.lt.-180.0d0.or.ckei.gt.180.0d0) then
+      getr=-1.0d0
+      return
+   endif
+   id=max(1,min(mido-1,int((cido+90.0d0)/sido)+1))   ! lower latitude bin
+   ik=max(1,min(mkei-1,int((ckei+180.0d0)/skei)+1))  ! lower longitude bin
    cor1=cordata(id,ik)*(dpido(id+1)-cido)/(dpido(id+1)-dpido(id))+cordata(id+1,ik)*(cido-dpido(id))/(dpido(id+1)-dpido(id))
    cor2=cordata(id,ik+1)*(dpido(id+1)-cido)/(dpido(id+1)-dpido(id))+cordata(id+1,ik+1)*(cido-dpido(id))/(dpido(id+1)-dpido(id))
    getr=cor1*(dpkei(ik+1)-ckei)/(dpkei(ik+1)-dpkei(ik))+cor2*(ckei-dpkei(ik))/(dpkei(ik+1)-dpkei(ik))
@@ -1407,92 +1454,112 @@ function doublesig(e,a) ! get double sigmoid
    return
 end
 
-function getHP(iy0,im0,id0,ic) ! get FFP from FFP tables
-!   ic=1: obtain FFP from neutron monitor data
-!	ic=2: obtain FFP from Wolf number
-!	ic=3: suspected ground level event
-!	ic=4: Too long time ago or future
-!	ic=5: no such date
-   parameter(nmonth=12)
-   parameter(nday=31)
-   parameter(iymax=2020) ! maximum year
-   parameter(iymin=1614) ! earliest year
-
+function getHP(iy0,im0,id0,ic) ! get solar W index from bundled tables
+!   ic=1: daily neutron-monitor data
+!   ic=2: annual Usoskin/Wolf-number data
+!   ic=3: suspected ground-level event (encoded offset removed)
+!   ic=4: no data for the requested year/date
+!   ic=5: invalid calendar date
+!   ic=6: table I/O or format error
    implicit real*8 (a-h, o-z)
+   integer, parameter:: nmonth=12, nday=31
+   integer, parameter:: iymin=1500, iymax=2500
+   real*8, parameter:: missing=-1.0d30
+   integer iy0,im0,id0,ic
+   integer iy,im,id,ios,itmp,itmp1,itmp2,maxday
+   integer, save:: iystart=0,iyend=-1,iysUs=0,iyeUs=-1
+   integer, dimension(12):: days_in_month
+   real*8, save:: FFP(iymin:iymax,nmonth,nday)
+   real*8, save:: FFPuso(iymin:iymax)
+   logical, save:: initialized=.false.,tables_ok=.false.
+   logical leap_year
 
-   real, save:: FFP(iymin:iymax,nmonth,nday)
-   real, save:: FFPuso(iymin:iymax) ! 0 & nmonth+1 data are used for interpolation
+   getHP=0.0d0
 
-   data ifirst/0/
-   integer*4, save:: iystart,iyend,iysUs,iyeUs
+   if(.not.initialized) then
+      FFP=missing
+      FFPuso=missing
+      tables_ok=.false.
 
-   if(ifirst.eq.0) then ! first time call this subroutine
-      do iy=iymin,iymax  ! Initialized
-         FFPuso(iy)=0.0
-         do im=1,nmonth
-            do id=1,nday
-               FFP(iy,im,id)=0.0
-            enddo
-         enddo
-      enddo
-      open(unit=15,file='input/FFPtable.day',status='old')
-      read(15,*) iystart,iyend
+      open(unit=15,file='input/FFPtable.day',status='old',action='read',iostat=ios)
+      if(ios.ne.0) goto 900
+      read(15,*,iostat=ios) iystart,iyend
+      if(ios.ne.0.or.iystart.lt.iymin.or.iyend.gt.iymax.or.iystart.gt.iyend) goto 900
       do im=1,nmonth
          do id=1,nday
-            read(15,*) itmp1,itmp2,(FFP(iy,im,id),iy=iystart,iyend)
+            read(15,*,iostat=ios) itmp1,itmp2,(FFP(iy,im,id),iy=iystart,iyend)
+            if(ios.ne.0.or.itmp1.ne.im.or.itmp2.ne.id) goto 900
          enddo
       enddo
-      close(unit=15)
-      open(unit=15,file='input/FFPtable.uso',status='old')
-      read(15,*) iysUs,iyeUs
+      close(unit=15,iostat=ios)
+
+      open(unit=15,file='input/FFPtable.uso',status='old',action='read',iostat=ios)
+      if(ios.ne.0) goto 900
+      read(15,*,iostat=ios) iysUs,iyeUs
+      if(ios.ne.0.or.iysUs.lt.iymin.or.iyeUs.gt.iymax.or.iysUs.gt.iyeUs) goto 900
       do iy=iysUs,iyeUs
-         read(15,*) itmp,FFPuso(iy)
+         read(15,*,iostat=ios) itmp,FFPuso(iy)
+         if(ios.ne.0.or.itmp.ne.iy) goto 900
       enddo
-      close(unit=15)
-      ifirst=1
+      close(unit=15,iostat=ios)
+
+      tables_ok=.true.
+900   continue
+      if(.not.tables_ok) close(unit=15,iostat=ios)
+      initialized=.true.
    endif
 
-! ****** Year, month, day Check **************
-   if(iy0.lt.iymin.or.iy0.gt.iymax) then  ! out of range
-      ic=4
-      getHP=0.0
+   if(.not.tables_ok) then
+      ic=6
       return
    endif
-   if(im0.lt.1.or.im0.gt.nmonth.or.id0.lt.1.or.id0.gt.nday) then
+
+! ****** Validate the calendar date **************
+   if(iy0.lt.1.or.im0.lt.1.or.im0.gt.nmonth) then
       ic=5
-      getHP=0.0
+      return
+   endif
+   leap_year=(mod(iy0,4).eq.0.and.mod(iy0,100).ne.0).or.mod(iy0,400).eq.0
+   days_in_month=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   if(leap_year) days_in_month(2)=29
+   maxday=days_in_month(im0)
+   if(id0.lt.1.or.id0.gt.maxday) then
+      ic=5
       return
    endif
 
-! ******Determine FFP from Neutron Monitor *************
-   if(FFP(iy0,im0,id0).gt.-99.0) then ! data exist
-      if(iy0.ge.iystart.and.FFP(iy0,im0,id0).eq.-1000.0) then ! no such date
-         ic=5
-         getHP=0.0
-      else  ! neutron monitor data exist
+   if(iy0.lt.iymin.or.iy0.gt.iymax) then
+      ic=4
+      return
+   endif
+
+! ****** Prefer daily neutron-monitor data *************
+   if(iy0.ge.iystart.and.iy0.le.iyend) then
+      if(FFP(iy0,im0,id0).gt.-99.0d0) then
          getHP=FFP(iy0,im0,id0)
-         if(getHP.gt.1000.0) then
-            ic=3 ! GLE occurred
-            getHP=getHP-10000.0
+         if(getHP.gt.1000.0d0) then
+            ic=3
+            getHP=getHP-10000.0d0
          else
-            ic=1 ! normal data
+            ic=1
          endif
+         return
       endif
-      return
    endif
 
-!  ***** Determine FFP from Usoskin's data  *****
-   if(FFPuso(iy0).ne.0.0) then
-      getHP=FFPuso(iy0)
-      ic=2  ! determine FFP from Usoskin's data
-      return
+! ****** Fall back to annual Usoskin data *************
+   if(iy0.ge.iysUs.and.iy0.le.iyeUs) then
+      if(FFPuso(iy0).gt.missing/2.0d0) then
+         getHP=FFPuso(iy0)
+         ic=2
+         return
+      endif
    endif
 
-!  **** No data **************************
+! ****** No data **************************
    ic=4
-   getHP=0.0
+   getHP=0.0d0
    return
-
 end
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1540,22 +1607,25 @@ contains
       integer :: i
       real(kind=8) :: log_emin, log_emax, step
 
-      ! Compute the logarithms of the min and max energies
+      if (npoints < 2) error stop 'create_log_grid requires at least two points'
+      if (min_val <= 0.0d0 .or. max_val <= min_val) then
+         error stop 'create_log_grid requires 0 < min_val < max_val'
+      end if
+
+      ! Compute the logarithms of the min and max energies.
       log_emin = log10(min_val)
       log_emax = log10(max_val)
-
-      ! Calculate the step size in logarithmic space
-      step = (log_emax - log_emin) / (real(npoints) - 1.0d0)
+      step = (log_emax - log_emin) / (real(npoints, kind=8) - 1.0d0)
 
       do i = 1, npoints
-         grid_out(i) = 10.0**(log_emin + (real(i) - 1.0d0) * step)
+         grid_out(i) = 10.0d0**(log_emin + (real(i, kind=8) - 1.0d0) * step)
       end do
    end subroutine create_log_grid
 
    subroutine ID_to_string_mapping(n, label)
       implicit none
       integer, intent(in) :: n      ! Input integer ID
-      character(len=10), intent(out) :: label   ! Output string label
+      character(len=*), intent(out) :: label   ! Output string label
 
       ! Associate integers with strings
       select case (n)
@@ -1601,18 +1671,76 @@ contains
 
    function simpson_integration(energy_grid, flux_values, num_points) result(total_flux)
       implicit none
-      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
       integer, intent(in) :: num_points
-      real(kind=8) :: total_flux, h1, h2
+      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      real(kind=8) :: total_flux, h0, h1, span
+      integer :: i, last_simpson
+
+      if (num_points < 2) error stop 'simpson_integration requires at least two points'
+      total_flux = 0.0d0
+      last_simpson = num_points
+      if (mod(num_points, 2) == 0) last_simpson = num_points - 1
+
+      ! Integrate each pair of unequal intervals using the exact integral of
+      ! the quadratic Lagrange interpolant through the three points.
+      do i = 1, last_simpson - 2, 2
+         h0 = energy_grid(i+1) - energy_grid(i)
+         h1 = energy_grid(i+2) - energy_grid(i+1)
+         if (h0 <= 0.0d0 .or. h1 <= 0.0d0) error stop 'integration grid must increase'
+         span = h0 + h1
+         total_flux = total_flux + span / 6.0d0 * ( &
+            (2.0d0 - h1/h0) * flux_values(i) + &
+            (span*span/(h0*h1)) * flux_values(i+1) + &
+            (2.0d0 - h0/h1) * flux_values(i+2))
+      end do
+
+      ! An even number of points leaves one final interval; do not omit it.
+      if (last_simpson < num_points) then
+         h0 = energy_grid(num_points) - energy_grid(num_points-1)
+         if (h0 <= 0.0d0) error stop 'integration grid must increase'
+         total_flux = total_flux + 0.5d0*h0 * &
+            (flux_values(num_points-1) + flux_values(num_points))
+      end if
+   end function simpson_integration
+
+   function log_simpson_integration(energy_grid, flux_values, num_points) result(total_flux)
+      implicit none
+      integer, intent(in) :: num_points
+      real(kind=8), dimension(num_points), intent(in) :: energy_grid, flux_values
+      real(kind=8) :: total_flux, log_step, weighted_sum, expected_log, tolerance
       integer :: i
 
-      total_flux = 0.0d0
-      do i = 2, num_points - 1, 2
-         h1 = energy_grid(i) - energy_grid(i-1)
-         h2 = energy_grid(i+1) - energy_grid(i)
-         total_flux = total_flux + (h1 + h2) / 6.0d0 * (flux_values(i-1) + 4.0d0*flux_values(i) + flux_values(i+1))
+      if (num_points < 3 .or. mod(num_points, 2) == 0) then
+         error stop 'log_simpson_integration requires an odd number of at least three points'
+      end if
+      if (energy_grid(1) <= 0.0d0) error stop 'log integration requires positive energies'
+
+      log_step = (log(energy_grid(num_points)) - log(energy_grid(1))) / &
+         real(num_points - 1, kind=8)
+      if (log_step <= 0.0d0) error stop 'integration grid must increase'
+      tolerance = 1.0d3 * epsilon(1.0d0) * max(1.0d0, abs(log(energy_grid(num_points))))
+
+      do i = 2, num_points
+         if (energy_grid(i) <= energy_grid(i-1)) error stop 'integration grid must increase'
+         expected_log = log(energy_grid(1)) + real(i - 1, kind=8) * log_step
+         if (abs(log(energy_grid(i)) - expected_log) > tolerance) then
+            error stop 'log_simpson_integration requires a logarithmically uniform grid'
+         end if
       end do
-   end function simpson_integration
+
+      ! With x=ln(E), dE=E dx.  Simpson's rule is therefore applied to
+      ! flux(E)*E on the uniformly spaced x grid.
+      weighted_sum = flux_values(1)*energy_grid(1) + &
+         flux_values(num_points)*energy_grid(num_points)
+      do i = 2, num_points - 1
+         if (mod(i, 2) == 0) then
+            weighted_sum = weighted_sum + 4.0d0*flux_values(i)*energy_grid(i)
+         else
+            weighted_sum = weighted_sum + 2.0d0*flux_values(i)*energy_grid(i)
+         end if
+      end do
+      total_flux = log_step * weighted_sum / 3.0d0
+   end function log_simpson_integration
 
    function flux_interpolation(x, x_grid, y_vals, num_points) result(fx)
       real(8), intent(in) :: x

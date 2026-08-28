@@ -1,0 +1,23 @@
+PARMA-DERIVED CODE AND DATA — USE NOTICE
+
+This repository contains source code and data derived from the PARMA/PARMA4
+cosmic-ray model distributed by the Japan Atomic Energy Agency (JAEA). The
+materials supplied in the original project archive do not include a standard
+open-source license grant. Nothing in this notice creates rights beyond those
+granted by the original copyright holders.
+
+The supplied upstream notice permits non-commercial use subject to citation of
+the following publications:
+
+1. T. Sato, "Analytical model for estimating terrestrial cosmic ray fluxes
+   nearly anytime and anywhere in the world: Extension of PARMA/EXPACS,"
+   PLOS ONE 10(12), e0144679 (2015).
+2. T. Sato, "Analytical model for estimating the zenith angle dependence of
+   terrestrial cosmic ray fluxes," PLOS ONE 11(8), e0160390 (2016).
+
+Commercial use requires prior agreement with JAEA. Users are responsible for
+confirming the applicable terms with JAEA and the original copyright holders
+before redistribution, commercial use, or incorporation into another product.
+
+Corrections and wrapper code added in this repository remain subject to the
+rights and restrictions governing the underlying PARMA-derived materials.
