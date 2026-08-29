@@ -94,7 +94,7 @@ The geometry parameter affects the neutron model:
 - `0 <= g <= 1`: ground environment; `g` is the water fraction. Use `0.15` when unknown.
 - `-10 < g < 0`: pilot/aircraft model; the magnitude encodes aircraft mass in the upstream parameterization.
 - `g < -10`: cabin/passenger aircraft model.
-- `g >= 10`: idealized no-Earth/semi-infinite-atmosphere mode. Values at or above `100` are also used by PARMA angular routines for black-hole mode.
+- `g >= 10`: idealized no-Earth/semi-infinite-atmosphere mode.
 
 The ambiguous value `g = -10` and the unsupported interval `1 < g < 10` are rejected.
 
