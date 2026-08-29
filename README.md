@@ -4,6 +4,10 @@ This project calculates angular- and energy-integrated atmospheric cosmic-ray fl
 
 The supplied Python driver evaluates a grid of thresholds and altitudes, writes a CSV file, and optionally creates a plot.
 
+Example output — integrated electron flux versus altitude at 28.7°N, 80.8°W for 2019-05-27, above energy thresholds of 0.3 and 1 MeV (reproduced by the default `python3 run_on_grid.py` run):
+
+![Integrated electron flux versus altitude for energy thresholds of 0.3 and 1 MeV](flux_vs_altitude_electron.png)
+
 ## Requirements
 
 For the model executable:
@@ -120,6 +124,8 @@ The default command reproduces the electron altitude scan at thresholds of 0.3 a
 ```bash
 python3 run_on_grid.py
 ```
+
+This writes `results.csv` and the plot `flux_vs_altitude_electron.png` shown above.
 
 Useful options include:
 
