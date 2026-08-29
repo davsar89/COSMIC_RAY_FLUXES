@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -16,6 +18,15 @@ from typing import Iterable, Sequence
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "electron_fluxes"
 RESULT_PREFIX = "RESULT_CSV"
+
+# The most recent valid daily value in the bundled input/FFPtable.day; must
+# match the Fortran defaults in electron_fluxes.f90.
+DEFAULT_YEAR = 2019
+DEFAULT_MONTH = 5
+DEFAULT_DAY = 27
+DEFAULT_GEOMETRY = 0.15
+DEFAULT_ATMOSPHERE = "standard"
+DEFAULT_TIMEOUT = 60.0
 
 
 def resolve_executable(path: Path) -> Path:
@@ -149,17 +160,20 @@ def run_executable_with_parameters(
     latitude: float,
     longitude: float,
     *,
-    year: int = 2019,
-    month: int = 5,
-    day: int = 27,
-    geometry: float = 0.15,
-    atmosphere: str = "standard",
+    year: int = DEFAULT_YEAR,
+    month: int = DEFAULT_MONTH,
+    day: int = DEFAULT_DAY,
+    geometry: float = DEFAULT_GEOMETRY,
+    atmosphere: str = DEFAULT_ATMOSPHERE,
     solar_w: float | None = None,
     executable: Path = DEFAULT_EXECUTABLE,
-    timeout: float = 60.0,
+    timeout: float = DEFAULT_TIMEOUT,
 ) -> FluxResult:
     """Execute one model calculation and return its parsed result."""
-    executable = resolve_executable(executable.expanduser().resolve())
+    executable = executable.expanduser()
+    if not executable.is_absolute():
+        executable = PROJECT_ROOT / executable
+    executable = resolve_executable(executable.resolve())
     if not executable.is_file():
         raise FileNotFoundError(f"Executable not found: {executable}. Run 'make' first.")
     if not math.isfinite(timeout) or timeout <= 0.0:
@@ -331,46 +345,67 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--altitude-step", type=float, default=0.2)
     parser.add_argument("--latitude", type=float, default=28.7)
     parser.add_argument("--longitude", type=float, default=-80.8)
-    parser.add_argument("--year", type=int, default=2019)
-    parser.add_argument("--month", type=int, default=5)
-    parser.add_argument("--day", type=int, default=27)
-    parser.add_argument("--geometry", type=float, default=0.15)
-    parser.add_argument("--atmosphere", choices=("standard", "msis"), default="standard")
+    parser.add_argument("--year", type=int, default=DEFAULT_YEAR)
+    parser.add_argument("--month", type=int, default=DEFAULT_MONTH)
+    parser.add_argument("--day", type=int, default=DEFAULT_DAY)
+    parser.add_argument("--geometry", type=float, default=DEFAULT_GEOMETRY)
+    parser.add_argument("--atmosphere", choices=("standard", "msis"), default=DEFAULT_ATMOSPHERE)
     parser.add_argument("--solar-w", type=float, default=None, help="Override the date-based solar W index.")
-    parser.add_argument("--output", type=Path, default=Path("results.csv"))
-    parser.add_argument("--plot", type=Path, default=Path("flux_vs_altitude_electron.png"))
+    parser.add_argument("--output", type=Path, default=Path("results.local.csv"))
+    parser.add_argument("--plot", type=Path, default=Path("flux_vs_altitude_electron.local.png"))
     parser.add_argument("--no-plot", action="store_true")
     parser.add_argument("--show", action="store_true", help="Display the plot interactively after saving it.")
     parser.add_argument("--executable", type=Path, default=DEFAULT_EXECUTABLE)
-    parser.add_argument("--timeout", type=float, default=60.0)
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="Number of model runs to execute concurrently (default: CPU count).",
+    )
     return parser
 
 
 def calculate_grid(args: argparse.Namespace) -> list[FluxResult]:
     altitudes = inclusive_decimal_range(args.altitude_min, args.altitude_max, args.altitude_step)
+    if args.jobs < 1:
+        raise ValueError("--jobs must be at least 1.")
+    points = [(threshold, altitude) for threshold in args.thresholds for altitude in altitudes]
+
+    def run_point(threshold: float, altitude: float) -> FluxResult:
+        return run_executable_with_parameters(
+            args.particle_id,
+            threshold,
+            altitude,
+            args.latitude,
+            args.longitude,
+            year=args.year,
+            month=args.month,
+            day=args.day,
+            geometry=args.geometry,
+            atmosphere=args.atmosphere,
+            solar_w=args.solar_w,
+            executable=args.executable,
+            timeout=args.timeout,
+        )
+
+    # The runs are independent subprocesses; execute them on a bounded pool and
+    # collect in submission order so results and progress stay deterministic.
     results: list[FluxResult] = []
-    for threshold in args.thresholds:
-        for altitude in altitudes:
-            result = run_executable_with_parameters(
-                args.particle_id,
-                threshold,
-                altitude,
-                args.latitude,
-                args.longitude,
-                year=args.year,
-                month=args.month,
-                day=args.day,
-                geometry=args.geometry,
-                atmosphere=args.atmosphere,
-                solar_w=args.solar_w,
-                executable=args.executable,
-                timeout=args.timeout,
-            )
-            results.append(result)
-            print(
-                f"threshold={threshold:g}, altitude={altitude:g} km, "
-                f"flux={result.total_flux_cm2_s:.10e} cm^-2 s^-1"
-            )
+    with ThreadPoolExecutor(max_workers=min(args.jobs, len(points))) as pool:
+        futures = [pool.submit(run_point, threshold, altitude) for threshold, altitude in points]
+        try:
+            for (threshold, altitude), future in zip(points, futures):
+                result = future.result()
+                results.append(result)
+                print(
+                    f"threshold={threshold:g}, altitude={altitude:g} km, "
+                    f"flux={result.total_flux_cm2_s:.10e} cm^-2 s^-1"
+                )
+        except BaseException:
+            for future in futures:
+                future.cancel()
+            raise
     return results
 
 
@@ -386,7 +421,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             plot_path = output_path(args.plot)
             plot_results(plot_path, results, args.show)
             print(f"Wrote plot to {plot_path}")
-    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     return 0

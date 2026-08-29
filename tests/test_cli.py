@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import csv
 import math
+import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from run_on_grid import parse_result, resolve_executable, run_executable_with_parameters  # noqa: E402
+from run_on_grid import main, parse_result, resolve_executable, run_executable_with_parameters  # noqa: E402
 
 EXECUTABLE = resolve_executable(ROOT / "electron_fluxes")
 
@@ -131,16 +134,45 @@ class FluxCliTests(unittest.TestCase):
             )
 
     def test_python_wrapper_is_cwd_independent(self) -> None:
-        result = run_executable_with_parameters(
-            31,
-            0.3,
-            15,
-            20,
-            -80,
-            executable=EXECUTABLE,
-            timeout=60,
-        )
+        original_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as workdir:
+            os.chdir(workdir)
+            try:
+                # A relative executable path must anchor to the project root,
+                # and the run must succeed away from the repository.
+                result = run_executable_with_parameters(
+                    31,
+                    0.3,
+                    15,
+                    20,
+                    -80,
+                    executable=Path("electron_fluxes"),
+                    timeout=60,
+                )
+            finally:
+                os.chdir(original_cwd)
         self.assertGreater(result.total_flux_cm2_s, 0.0)
+
+    def test_grid_pipeline_writes_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as workdir:
+            output = Path(workdir) / "grid.csv"
+            exit_code = main(
+                [
+                    "--thresholds", "0.3",
+                    "--altitude-min", "15",
+                    "--altitude-max", "15.2",
+                    "--altitude-step", "0.2",
+                    "--no-plot",
+                    "--jobs", "2",
+                    "--output", str(output),
+                ]
+            )
+            self.assertEqual(exit_code, 0)
+            with output.open(newline="", encoding="utf-8") as handle:
+                rows = list(csv.reader(handle))
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows[0]), 19)
+        self.assertEqual([float(row[4]) for row in rows[1:]], [15.0, 15.2])
 
 
 if __name__ == "__main__":

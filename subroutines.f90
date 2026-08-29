@@ -365,7 +365,7 @@ subroutine getGpara(g,geo) ! get surroudning environment parameters
       geo(6)=(p(10)+p(11)*exp(-p(12)*g))/(1+p(13)*exp(-p(14)*g))
    else   ! pilot or cabin location
       is=14
-      if(g.le.-10.0) is=is+5 ! for passenger & small aircraft configuration, skip 5 more data
+      if(g.lt.-10.0) is=is+5 ! for passenger & small aircraft configuration, skip 5 more data
       do i=1,5
          geo(i)=p(is+i)
       enddo

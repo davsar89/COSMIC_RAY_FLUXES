@@ -4,7 +4,7 @@ This project calculates angular- and energy-integrated atmospheric cosmic-ray fl
 
 The supplied Python driver evaluates a grid of thresholds and altitudes, writes a CSV file, and optionally creates a plot.
 
-Example output — integrated electron flux versus altitude at 28.7°N, 80.8°W for 2019-05-27, above energy thresholds of 0.3 and 1 MeV (reproduced by the default `python3 run_on_grid.py` run):
+Example output — integrated electron flux versus altitude at 28.7°N, 80.8°W for 2019-05-27, above energy thresholds of 0.3 and 1 MeV (the default `python3 run_on_grid.py` run computes exactly this figure):
 
 ![Integrated electron flux versus altitude for energy thresholds of 0.3 and 1 MeV](flux_vs_altitude_electron.png)
 
@@ -125,7 +125,7 @@ The default command reproduces the electron altitude scan at thresholds of 0.3 a
 python3 run_on_grid.py
 ```
 
-This writes `results.csv` and the plot `flux_vs_altitude_electron.png` shown above.
+This writes `results.local.csv` and the plot `flux_vs_altitude_electron.local.png` (both git-ignored, so a routine run never dirties the working tree). To regenerate the committed reference files shown above, pass `--output results.csv --plot flux_vs_altitude_electron.png` explicitly.
 
 Useful options include:
 
@@ -140,7 +140,7 @@ python3 run_on_grid.py \
   --output photon-results.csv --plot photon-flux.png
 ```
 
-Use `--solar-w VALUE` to override the date lookup, `--no-plot` to avoid the Matplotlib dependency, and `--show` to open an interactive plot after saving. Paths are resolved independently of the caller’s current working directory, subprocesses have a configurable timeout, failed model runs stop the grid calculation, and flux values are written with scientific precision rather than rounded to four decimal places.
+Use `--solar-w VALUE` to override the date lookup, `--no-plot` to avoid the Matplotlib dependency, `--show` to open an interactive plot after saving, and `--jobs N` to control how many model runs execute concurrently (default: CPU count; grid points are independent subprocesses). Paths are resolved independently of the caller’s current working directory, subprocesses have a configurable timeout, failed model runs stop the grid calculation, and flux values are written with scientific precision rather than rounded to four decimal places.
 
 ## Docker
 
